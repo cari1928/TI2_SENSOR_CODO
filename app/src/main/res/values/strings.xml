@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">DemoSensor</string>
+    <string name="MA_STR_AnguloX">Angulo X :</string>
+    <string name="MA_STR_AnguloY">Angulo Y :</string>
+    <string name="MA_STR_AnguloZ">Angulo Z :</string>
+
+</resources>
