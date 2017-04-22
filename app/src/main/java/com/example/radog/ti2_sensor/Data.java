@@ -9,10 +9,21 @@ import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.TextView;
 
 import java.util.Locale;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 public class Data extends AppCompatActivity implements SensorEventListener, TextToSpeech.OnInitListener {
+
+    @BindView(R.id.tvNumRep)
+    TextView tvNumRep;
+    @BindView(R.id.tvNumEf)
+    TextView tvNumEf;
+    @BindView(R.id.tvType)
+    TextView tvType;
 
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
@@ -53,6 +64,7 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_data);
+        ButterKnife.bind(this);
 
         iniValues();
 
@@ -147,6 +159,7 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         switch (type) {
             case 0:
                 //flex codo
+                tvType.setText("Flexoextensión de Codo");
                 INI_LIM_INF_ANG_X = 47;
                 INI_LIM_SUP_ANG_X = 91;
                 INI_LIM_INF_ANG_Y = 77;
@@ -156,6 +169,7 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
                 break;
             case 1:
                 //flex muñeca
+                tvType.setText("Flexoextensión de Muñeca");
                 INI_LIM_INF_ANG_X = 36;
                 INI_LIM_SUP_ANG_X = 70;
                 INI_LIM_INF_ANG_Y = 71;
@@ -165,6 +179,7 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
                 break;
             case 2:
                 //pronosup
+                tvType.setText("Pronosupinación");
                 INI_LIM_INF_ANG_X = 84;
                 INI_LIM_SUP_ANG_X = 95;
                 INI_LIM_INF_ANG_Y = 72;
@@ -280,6 +295,7 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
                     speak("continue");
                 }
                 ++REPETITIONS;
+                tvNumRep.setText(REPETITIONS);
                 fIniFlexCodo = true; //si
             }
         }
