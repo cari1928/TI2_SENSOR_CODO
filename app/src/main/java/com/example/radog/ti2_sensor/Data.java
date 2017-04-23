@@ -24,6 +24,13 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
     TextView tvNumEf;
     @BindView(R.id.tvType)
     TextView tvType;
+    @BindView(R.id.TV_AnguloX)
+    TextView TV_AnguloX;
+    @BindView(R.id.TV_AnguloY)
+    TextView TV_AnguloY;
+    @BindView(R.id.TV_AnguloZ)
+    TextView TV_AnguloZ;
+
 
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
@@ -86,9 +93,9 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         AnguloY = (float) (Math.acos(k * B) * 180f / Math.PI);
         AnguloZ = (float) (Math.acos(k * C) * 180f / Math.PI);
 
-//        TV_AnguloX.setText(String.format("%.2f", AnguloX));
-//        TV_AnguloY.setText(String.format("%.2f", AnguloY));
-//        TV_AnguloZ.setText(String.format("%.2f", AnguloZ));
+        TV_AnguloX.setText(String.format("%.2f", AnguloX));
+        TV_AnguloY.setText(String.format("%.2f", AnguloY));
+        TV_AnguloZ.setText(String.format("%.2f", AnguloZ));
 
         chExercise();
     }
@@ -159,7 +166,7 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         switch (type) {
             case 0:
                 //flex codo
-                tvType.setText("Flexoextensión de Codo");
+                tvType.setText("Flexo-Extensión de Codo");
                 INI_LIM_INF_ANG_X = 47;
                 INI_LIM_SUP_ANG_X = 91;
                 INI_LIM_INF_ANG_Y = 77;
@@ -169,7 +176,7 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
                 break;
             case 1:
                 //flex muñeca
-                tvType.setText("Flexoextensión de Muñeca");
+                tvType.setText("Flexo-Extensión de Muñeca");
                 INI_LIM_INF_ANG_X = 36;
                 INI_LIM_SUP_ANG_X = 70;
                 INI_LIM_INF_ANG_Y = 71;
