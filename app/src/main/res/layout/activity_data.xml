@@ -52,43 +52,16 @@
         tools:layout_constraintTop_creator="1" />
 
     <TextView
-        android:id="@+id/tvEf"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="8dp"
-        android:layout_marginStart="8dp"
-        android:text="Eficiencia: "
-        android:textSize="20dp"
-        app:layout_constraintBaseline_toBaselineOf="@+id/tvNumEf"
-        app:layout_constraintLeft_toLeftOf="parent"
-        tools:layout_constraintBaseline_creator="1"
-        tools:layout_constraintLeft_creator="1" />
-
-    <TextView
-        android:id="@+id/tvNumEf"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="31dp"
-        android:text="0"
-        android:textSize="20dp"
-        app:layout_constraintLeft_toLeftOf="@+id/tvNumRep"
-        app:layout_constraintRight_toRightOf="@+id/tvNumRep"
-        app:layout_constraintTop_toBottomOf="@+id/tvNumRep"
-        tools:layout_constraintLeft_creator="1"
-        tools:layout_constraintRight_creator="1"
-        tools:layout_constraintTop_creator="1" />
-
-    <TextView
         android:id="@+id/TV_AnguloX"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="68dp"
+        android:layout_marginTop="22dp"
         android:text="TV_AnguloX"
         android:textSize="50dp"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvEf"
+        app:layout_constraintTop_toBottomOf="@+id/tvRep"
         tools:layout_constraintLeft_creator="1"
         tools:layout_constraintTop_creator="1" />
 
@@ -96,9 +69,10 @@
         android:id="@+id/TV_AnguloY"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="29dp"
+        android:layout_marginTop="32dp"
         android:text="TV_AnguloY"
         android:textSize="50dp"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintLeft_toLeftOf="@+id/TV_AnguloX"
         app:layout_constraintRight_toRightOf="@+id/TV_AnguloX"
         app:layout_constraintTop_toBottomOf="@+id/TV_AnguloX"
@@ -112,7 +86,7 @@
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="25dp"
+        android:layout_marginTop="22dp"
         android:text="TV_AnguloZ"
         android:textSize="50dp"
         app:layout_constraintLeft_toLeftOf="parent"

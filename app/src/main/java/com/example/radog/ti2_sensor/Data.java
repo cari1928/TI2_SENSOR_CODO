@@ -1,6 +1,7 @@
 package com.example.radog.ti2_sensor;
 
 import android.content.Context;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -9,8 +10,13 @@ import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import butterknife.BindView;
@@ -20,8 +26,6 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
 
     @BindView(R.id.tvNumRep)
     TextView tvNumRep;
-    @BindView(R.id.tvNumEf)
-    TextView tvNumEf;
     @BindView(R.id.tvType)
     TextView tvType;
     @BindView(R.id.TV_AnguloX)
@@ -30,7 +34,6 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
     TextView TV_AnguloY;
     @BindView(R.id.TV_AnguloZ)
     TextView TV_AnguloZ;
-
 
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
@@ -65,7 +68,10 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
     //----------------------------------------
 
     private int REPETITIONS = 0; //conteo de repeticiones
+    private final int FINAL_REP = 15;
     private double percent = 0; //eficiencia, fase de pruebas
+
+    private ArrayList<String> resultados = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,11 +81,32 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
 
         iniValues();
 
-        fIniFlexCodo = fEndElbowFlex = false; //el dispositivo no está ni en la posición inicial ni en la final
+        fIniFlexCodo = false; //el dispositivo no está ni en la posición inicial ni en la final
+        fEndElbowFlex = true;
 
         textToSpeech = new TextToSpeech(this, this);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.options, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.itmResultados:
+                Bundle datos = new Bundle();
+                datos.putStringArrayList("LIST", resultados);
+                Intent iListado = new Intent(this, listado_resultados.class);
+                iListado.putExtras(datos);
+                startActivity(iListado);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -269,6 +296,7 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         if (!initialPosition()) { //puede modificar la bandera fIniFlexCodo
             return false;
         }
+        //habilita la siguiente parte
         fEndElbowFlex = false; //el brazo está en la posición correcta
 
         //chMovement(); //por ahora no es necesario
@@ -277,12 +305,14 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
             return false;
         }
 
-        if (REPETITIONS < 16) { //hizo todos las REPETITIONS?
-            if (REPETITIONS != 15) { //no es la última repetición??
+        tvNumRep.setText(REPETITIONS + "");
+        if (REPETITIONS < FINAL_REP + 1) { //hizo todos las REPETITIONS?
+            if (REPETITIONS != FINAL_REP) { //no es la última repetición??
                 speak(REPETITIONS + "");
                 fIniFlexCodo = false; //para volver a la posición inicial
             } else {
                 REPETITIONS = 0;
+                fIniFlexCodo = fEndElbowFlex = true; //deshabilita ambos procesos
                 speak("You finished this excercise. Total Points: " + String.format("%.2f", percent));
             }
         }
@@ -302,8 +332,14 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
                     speak("continue");
                 }
                 ++REPETITIONS;
-                tvNumRep.setText(REPETITIONS);
-                fIniFlexCodo = true; //si
+                fIniFlexCodo = true; //deshabilita esta parte
+
+                resultados.add("X: " + AnguloX + "\n" +
+                        "Y: " + AnguloY + "\n" +
+                        "Z: " + AnguloZ + "\n");
+                /*Toast.makeText(this, "X: " + AnguloX + "\n" +
+                        "Y: " + AnguloY + "\n" +
+                        "Z: " + AnguloZ + "\n", Toast.LENGTH_SHORT).show();*/
             }
         }
         return fIniFlexCodo;
@@ -316,6 +352,13 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
                 (FIN_LIM_INF_ANG_Z <= AnguloZ && AnguloZ <= FIN_LIM_SUP_ANG_Z)) {
 
             if (!fEndElbowFlex) {
+                resultados.add("X: " + AnguloX + "\n" +
+                        "Y: " + AnguloY + "\n" +
+                        "Z: " + AnguloZ + "\n");
+                /*Toast.makeText(this, "X: " + AnguloX + "\n" +
+                        "Y: " + AnguloY + "\n" +
+                        "Z: " + AnguloZ + "\n", Toast.LENGTH_SHORT).show();*/
+
                 fEndElbowFlex = true; //el dispositivo esta en la posición correcta
             }
         }
