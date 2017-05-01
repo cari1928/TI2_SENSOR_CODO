@@ -44,25 +44,16 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
     private int INI_LIM_SUP_ANG_X;
     private int FIN_LIM_INF_ANG_X;
     private int FIN_LIM_SUP_ANG_X;
-    //fase de pruebas
-    private int MOV_LIM_INF_ANG_X;
-    private int MOV_LIM_SUP_ANG_X;
 
     private int INI_LIM_INF_ANG_Y;
     private int INI_LIM_SUP_ANG_Y;
     private int FIN_LIM_INF_ANG_Y;
     private int FIN_LIM_SUP_ANG_Y;
-    //fase de pruebas
-    private int MOV_LIM_INF_ANG_Y;
-    private int MOV_LIM_SUP_ANG_Y;
 
     private int INI_LIM_INF_ANG_Z;
     private int INI_LIM_SUP_ANG_Z;
     private int FIN_LIM_INF_ANG_Z;
     private int FIN_LIM_SUP_ANG_Z;
-    //fase de pruebas
-    private int MOV_LIM_INF_ANG_Z;
-    private int MOV_LIM_SUP_ANG_Z;
     //----------------------------------------
 
     private int REPETITIONS = 0; //conteo de repeticiones
@@ -70,9 +61,12 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
     private double percent = 0; //eficiencia, fase de pruebas
 
     private ArrayList<String> resultados = new ArrayList<>();
+    private ArrayList<String> lFinalRes = new ArrayList<>();
     private ArrayList<float[]> lValues;
     private boolean fPosInicial;
     private int excersice;
+    private float tmpX, tmpY, tmpZ;
+    private boolean uFlag;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,9 +77,11 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         Bundle data = getIntent().getExtras(); //Usé un bundle por si llegamos a mandar más datos
         excersice = data.getInt("TYPE"); //el tipo de ejercicio fue mandado desde MainActivity
         lValues = new ArrayList<>();
-        fPosInicial = false;
-        fIniFlexCodo = true;
-        fEndElbowFlex = true;
+        fPosInicial = false; //desbloqueado
+        fIniFlexCodo = true; //bloqueado
+        fEndElbowFlex = true; //bloqueado
+        tmpX = tmpY = tmpZ = 0; //inicializa
+        uFlag = false;
 
         textToSpeech = new TextToSpeech(this, this);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -100,11 +96,18 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        Bundle datos = new Bundle();
+        Intent iListado;
         switch (item.getItemId()) {
-            case R.id.itmResultados:
-                Bundle datos = new Bundle();
+            case R.id.itmIniResults:
                 datos.putStringArrayList("LIST", resultados);
-                Intent iListado = new Intent(this, listado_resultados.class);
+                iListado = new Intent(this, listado_resultados.class);
+                iListado.putExtras(datos);
+                startActivity(iListado);
+                break;
+            case R.id.itmFinResults:
+                datos.putStringArrayList("LIST", lFinalRes);
+                iListado = new Intent(this, listado_resultados.class);
                 iListado.putExtras(datos);
                 startActivity(iListado);
                 break;
@@ -216,12 +219,18 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         switch (excersice) {
             case 0:
                 //flex codo
-                FIN_LIM_INF_ANG_X = INI_LIM_INF_ANG_X + 48;
-                FIN_LIM_SUP_ANG_X = FIN_LIM_INF_ANG_X + 36;
+                /*FIN_LIM_INF_ANG_X = INI_LIM_INF_ANG_X + 48;
+                FIN_LIM_SUP_ANG_X = INI_LIM_SUP_ANG_X + 40;
                 FIN_LIM_INF_ANG_Y = INI_LIM_INF_ANG_Y - 16;
-                FIN_LIM_SUP_ANG_Y = FIN_LIM_INF_ANG_Y + 24;
+                FIN_LIM_SUP_ANG_Y = INI_LIM_SUP_ANG_Y - 9;
                 FIN_LIM_INF_ANG_Z = INI_LIM_INF_ANG_Z + 112;
-                FIN_LIM_SUP_ANG_Z = FIN_LIM_INF_ANG_Z + 30;
+                FIN_LIM_SUP_ANG_Z = INI_LIM_SUP_ANG_Z + 115;*/
+                FIN_LIM_INF_ANG_X = 105;
+                FIN_LIM_SUP_ANG_X = 140;
+                FIN_LIM_INF_ANG_Y = 65;
+                FIN_LIM_SUP_ANG_Y = 85;
+                FIN_LIM_INF_ANG_Z = 130;
+                FIN_LIM_SUP_ANG_Z = 145;
                 break;
             case 1:
                 //flex muñeca
@@ -253,33 +262,69 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
             }
         }
 
-        if (!initialPosition()) { //puede modificar la bandera fIniFlexCodo
-            return false;
-        }
+        int rX = (int) AnguloX - (int) tmpX;
+        int rY = (int) AnguloY - (int) tmpY;
+        int rZ = (int) AnguloZ - (int) tmpZ;
 
-        if (!finalPosition()) { //puede modificar la bandera fEndElbowFlex
-            return false;
-        }
+        Log.i("RESTAX", AnguloX + " - " + tmpX + " = " + rX);
+        Log.i("RESTAY", AnguloY + " - " + tmpY + " = " + rY);
+        Log.i("RESTAZ", AnguloZ + " - " + tmpZ + " = " + rZ);
+        Log.i("FLAG", uFlag + "");
 
-        ++REPETITIONS;
-        tvNumRep.setText(REPETITIONS + "");
-        if (REPETITIONS < FINAL_REP + 1) { //hizo todos las REPETITIONS?
-            if (REPETITIONS != FINAL_REP) { //no es la última repetición??
-                speak(REPETITIONS + "");
-                fIniFlexCodo = false; //para volver a la posición inicial
-            } else {
-                REPETITIONS = 0;
-                fIniFlexCodo = fEndElbowFlex = true; //deshabilita ambos procesos
-                speak("Points: " + String.format("%.2f", percent));
+        if ((rX <= 0) || (0 <= rY) || (rZ <= 0)) {
+            Log.i("STATUS", "UP");
+            //movimiento hacia arriba
+            //los tmp tienen el momento antes de subir
+            rX = Math.abs(rX);
+            rY = Math.abs(rY);
+            rZ = Math.abs(rZ);
+            if ((0 > rX || rX > 10) || (0 > rY || rY > 5) || (0 > rZ || rZ > 10)) {
+                if (uFlag) {
+                    resultados.add("ARRIBA " + tmpX + " " + tmpY + " " + tmpZ);
+                    uFlag = false;
+                }
+            }
+        } else if ((0 <= rX) || (rY <= 0) || (0 <= rZ)) {
+            Log.i("STATUS", "DOWN");
+            //movimiento hacia abajo
+            //los tmp tienen el movimiento antes de bajar
+            rX = Math.abs(rX);
+            rY = Math.abs(rY);
+            rZ = Math.abs(rZ);
+
+            if ((0 > rX || rX > 3) && (0 > rY || rY > 5) && (0 > rZ || rZ > 3)) {
+                if (!uFlag) {
+                    Log.i("ABS", rX + "");
+                    Log.i("ABS", rY + "");
+                    Log.i("ABS", rZ + "");
+
+                    resultados.add("ABAJO " + tmpX + " " + tmpY + " " + tmpZ);
+
+                    REPETITIONS++;
+                    speak(REPETITIONS + "");
+                    tvNumRep.setText(REPETITIONS + "");
+
+                    if (REPETITIONS == 15) {
+                        Bundle datos = new Bundle();
+                        datos.putStringArrayList("LIST", resultados);
+                        Intent iListado = new Intent(this, listado_resultados.class);
+                        iListado.putExtras(datos);
+                        startActivity(iListado);
+                    }
+                    uFlag = true;
+                }
             }
         }
-        return false;
+        tmpX = AnguloX;
+        tmpY = AnguloY;
+        tmpZ = AnguloZ;
+        return true;
     }
 
     private void setInitPosition() {
         boolean flag = true;
         float[] tmpV, objV;
-        float mayorX, menorX, menorY, menorZ;
+        float menorX, menorY, menorZ;
         lValues.add(new float[]{AnguloX, AnguloY, AnguloZ});
 
         timer(1); //un segundo
@@ -314,6 +359,16 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
             if (flag) {
                 iniInitialValues(new int[]{(int) menorX}, new int[]{(int) menorY}, new int[]{(int) menorZ});
                 iniFinalValues(new int[]{(int) menorX}, new int[]{(int) menorY}, new int[]{(int) menorZ});
+
+                tmpX = menorX;
+                tmpY = menorY;
+                tmpZ = menorZ;
+                uFlag = true;
+
+                resultados.add("Inicio: " + tmpX + " " + tmpY + " " + tmpZ);
+
+                speak("Ready");
+
                 fPosInicial = true;
                 fIniFlexCodo = false;
             }
@@ -352,6 +407,10 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
                 resultados.add("X: " + AnguloX + "\n" +
                         "Y: " + AnguloY + "\n" +
                         "Z: " + AnguloZ + "\n");
+
+                tmpX = AnguloX;
+                tmpY = AnguloY;
+                tmpZ = AnguloZ;
             }
         }
         return fIniFlexCodo;
@@ -359,18 +418,66 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
 
     //Verifica la posición final de flex codo
     private boolean finalPosition() {
-        if ((FIN_LIM_INF_ANG_X <= AnguloX && AnguloX <= FIN_LIM_SUP_ANG_X) &&
-                (FIN_LIM_INF_ANG_Y <= AnguloY && AnguloY <= FIN_LIM_SUP_ANG_Y) &&
-                (FIN_LIM_INF_ANG_Z <= AnguloZ && AnguloZ <= FIN_LIM_SUP_ANG_Z)) {
 
-            if (!fEndElbowFlex) {
-                resultados.add("X: " + AnguloX + "\n" +
-                        "Y: " + AnguloY + "\n" +
-                        "Z: " + AnguloZ + "\n");
-
-                fEndElbowFlex = true; //el dispositivo esta en la posición correcta
-            }
+        if (fEndElbowFlex) {
+            return true;
         }
+
+        //flex codo
+        //X VA EN AUMENTO
+        //Y VA DISMINUYENDO
+        //Z VA EN AUMENTO
+        if (tmpX == 0 && tmpY == 0 && tmpZ == 0) {
+            tmpX = AnguloX;
+            tmpY = AnguloY;
+            tmpZ = AnguloZ;
+
+            Log.i("INFO", "INICIO");
+            Log.i("INFOX", tmpX + "");
+            Log.i("INFOY", tmpY + "");
+            Log.i("INFOZ", tmpZ + "");
+
+        } else if (AnguloX < (tmpX - 5) ||
+                AnguloY > (tmpY + 5) ||
+                AnguloZ < (tmpZ - 5)) {
+
+            lFinalRes.add("X: " + AnguloX + "\n" +
+                    "Y: " + AnguloY + "\n" +
+                    "Z: " + AnguloZ + "\n");
+
+            fEndElbowFlex = true; //el dispositivo esta en la posición correcta
+            ++REPETITIONS;
+            tvNumRep.setText(REPETITIONS + "");
+
+            Log.i("INFO", "PLANOS");
+            Log.i("INFOX", AnguloX + "");
+            Log.i("INFOY", AnguloY + "");
+            Log.i("INFOZ", AnguloZ + "");
+
+            Log.i("INFO", "LIMPIA");
+            Log.i("INFOX", tmpX + "");
+            Log.i("INFOY", tmpY + "");
+            Log.i("INFOZ", tmpZ + "");
+
+            tmpX = tmpY = tmpZ = 0;
+
+        } else {
+
+            Log.i("INFO", "ANTES");
+            Log.i("INFOX", tmpX + "");
+            Log.i("INFOY", tmpY + "");
+            Log.i("INFOZ", tmpZ + "");
+
+            tmpX = AnguloX;
+            tmpY = AnguloY;
+            tmpZ = AnguloZ;
+
+            Log.i("INFO", "DESPUES");
+            Log.i("INFOX", tmpX + "");
+            Log.i("INFOY", tmpY + "");
+            Log.i("INFOZ", tmpZ + "");
+        }
+
         return fEndElbowFlex;
     }
 
