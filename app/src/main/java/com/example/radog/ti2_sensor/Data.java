@@ -12,7 +12,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -33,15 +32,12 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
     TextView TV_AnguloY;
     @BindView(R.id.TV_AnguloZ)
     TextView TV_AnguloZ;
-    @BindView(R.id.lvRepe)
-    ListView lvRepe;
 
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private TextToSpeech textToSpeech; //para la voz
     private float AnguloX, AnguloY, AnguloZ;
-
-    //por ahora no se ocupan
+    private float AnguloXMax, AnguloYMax, AnguloZMax;
     private boolean fIniFlexCodo, fEndElbowFlex; //para ir viendo la posición del dispositivo
 
     //LIMITES PARA LOS 3 PLANOS------------
@@ -49,16 +45,25 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
     private int INI_LIM_SUP_ANG_X;
     private int FIN_LIM_INF_ANG_X;
     private int FIN_LIM_SUP_ANG_X;
+    //fase de pruebas
+    private int MOV_LIM_INF_ANG_X;
+    private int MOV_LIM_SUP_ANG_X;
 
     private int INI_LIM_INF_ANG_Y;
     private int INI_LIM_SUP_ANG_Y;
     private int FIN_LIM_INF_ANG_Y;
     private int FIN_LIM_SUP_ANG_Y;
+    //fase de pruebas
+    private int MOV_LIM_INF_ANG_Y;
+    private int MOV_LIM_SUP_ANG_Y;
 
     private int INI_LIM_INF_ANG_Z;
     private int INI_LIM_SUP_ANG_Z;
     private int FIN_LIM_INF_ANG_Z;
     private int FIN_LIM_SUP_ANG_Z;
+    //fase de pruebas
+    private int MOV_LIM_INF_ANG_Z;
+    private int MOV_LIM_SUP_ANG_Z;
     //----------------------------------------
 
     private int REPETITIONS = 0; //conteo de repeticiones
@@ -66,14 +71,10 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
     private double percent = 0; //eficiencia, fase de pruebas
 
     private ArrayList<String> resultados = new ArrayList<>();
-    private ArrayList<String> lFinalRes = new ArrayList<>();
-    private ArrayList<Item_Resultado> alItems = new ArrayList<>();
     private ArrayList<float[]> lValues;
     private boolean fPosInicial;
+    private boolean InsideInitPos;
     private int excersice;
-    private float tmpX, tmpY, tmpZ;
-    private boolean uFlag;
-    private ListViewAdapter adapter = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,22 +82,24 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         setContentView(R.layout.activity_data);
         ButterKnife.bind(this);
 
-        adapter = new ListViewAdapter(alItems, this);
-        lvRepe.setAdapter(adapter);
-
         Bundle data = getIntent().getExtras(); //Usé un bundle por si llegamos a mandar más datos
-        excersice = data.getInt("TYPE");
+        excersice = data.getInt("TYPE"); //el tipo de ejercicio fue mandado desde MainActivity
         lValues = new ArrayList<>();
-        fPosInicial = false; //desbloqueado
-        fIniFlexCodo = true; //bloqueado
-        fEndElbowFlex = true; //bloqueado
-        tmpX = tmpY = tmpZ = 0; //inicializa
-        uFlag = false;
+        fPosInicial = false;
+        fIniFlexCodo = true;
+        fEndElbowFlex = true;
 
+        InsideInitPos = true;
+
+        AnguloXMax=0;
+        AnguloYMax=0;
+        AnguloZMax=0;
 
         textToSpeech = new TextToSpeech(this, this);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
+
     }
 
     @Override
@@ -107,18 +110,11 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        Bundle datos = new Bundle();
-        Intent iListado;
         switch (item.getItemId()) {
-            case R.id.itmIniResults:
+            case R.id.itmResultados:
+                Bundle datos = new Bundle();
                 datos.putStringArrayList("LIST", resultados);
-                iListado = new Intent(this, listado_resultados.class);
-                iListado.putExtras(datos);
-                startActivity(iListado);
-                break;
-            case R.id.itmFinResults:
-                datos.putStringArrayList("LIST", lFinalRes);
-                iListado = new Intent(this, listado_resultados.class);
+                Intent iListado = new Intent(this, listado_resultados.class);
                 iListado.putExtras(datos);
                 startActivity(iListado);
                 break;
@@ -137,9 +133,31 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         AnguloY = (float) (Math.acos(k * B) * 180f / Math.PI);
         AnguloZ = (float) (Math.acos(k * C) * 180f / Math.PI);
 
+        AnguloXMax=(AnguloXMax > AnguloX)?AnguloXMax : AnguloX;
+        AnguloYMax=(AnguloYMax > AnguloY)?AnguloYMax : AnguloY;
+        AnguloZMax=(AnguloZMax > AnguloZ)?AnguloZMax : AnguloZ;
+
         TV_AnguloX.setText(String.format("%.2f", AnguloX));
         TV_AnguloY.setText(String.format("%.2f", AnguloY));
         TV_AnguloZ.setText(String.format("%.2f", AnguloZ));
+
+        if(fPosInicial)
+        if(InsideInitPos)
+        {
+            if(!isInInitialPos())InsideInitPos=false;
+        }
+        else
+        {
+            if(isInInitialPos())
+            {
+                InsideInitPos=true;
+                initialPosition();
+                REPETITIONS++;
+                AnguloXMax=0;
+                AnguloYMax=0;
+                AnguloZMax=0;
+            }
+        }
 
         chExercise();
     }
@@ -189,38 +207,41 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
      * Asigna los valores para los atributos INI_LIM_INF e INI_LIM_SUP para los planos XYZ. Para la posición inicial
      */
     private void iniInitialValues(int[] X, int[] Y, int[] Z) {
+/*
         switch (excersice) {
             case 0:
                 //flex codo
+*/
                 tvType.setText("Flexo-Extensión de Codo");
-                INI_LIM_INF_ANG_X = X[0] - 5;
+                INI_LIM_INF_ANG_X = X[0] ;
                 INI_LIM_SUP_ANG_X = INI_LIM_INF_ANG_X + 44;
-                INI_LIM_INF_ANG_Y = Y[0] - 5;
+                INI_LIM_INF_ANG_Y = Y[0] ;
                 INI_LIM_SUP_ANG_Y = INI_LIM_INF_ANG_Y + 17;
-                INI_LIM_INF_ANG_Z = Z[0] - 5;
+                INI_LIM_INF_ANG_Z = Z[0] ;
                 INI_LIM_SUP_ANG_Z = INI_LIM_INF_ANG_Z + 27;
-                break;
+/*                break;
             case 1:
                 //flex muñeca
                 tvType.setText("Flexo-Extensión de Muñeca");
-                INI_LIM_INF_ANG_X = X[0] - 5;
-                INI_LIM_SUP_ANG_X = INI_LIM_INF_ANG_X + 34;
-                INI_LIM_INF_ANG_Y = Y[0] - 5;
-                INI_LIM_SUP_ANG_Y = INI_LIM_INF_ANG_Y + 18;
-                INI_LIM_INF_ANG_Z = Z[0] - 5;
-                INI_LIM_SUP_ANG_Z = INI_LIM_INF_ANG_Z + 29;
+                INI_LIM_INF_ANG_X = 36;
+                INI_LIM_SUP_ANG_X = 70;
+                INI_LIM_INF_ANG_Y = 71;
+                INI_LIM_SUP_ANG_Y = 89;
+                INI_LIM_INF_ANG_Z = 126;
+                INI_LIM_SUP_ANG_Z = 155;
                 break;
             case 2:
                 //pronosup
                 tvType.setText("Pronosupinación");
-                INI_LIM_INF_ANG_X = X[0] - 5;
-                INI_LIM_SUP_ANG_X = INI_LIM_INF_ANG_X + 11;
-                INI_LIM_INF_ANG_Y = Y[0] - 5;
-                INI_LIM_SUP_ANG_Y = INI_LIM_INF_ANG_Y + 19;
-                INI_LIM_INF_ANG_Z = Z[0] - 5;
-                INI_LIM_SUP_ANG_Z = INI_LIM_INF_ANG_Z + 17;
+                INI_LIM_INF_ANG_X = 84;
+                INI_LIM_SUP_ANG_X = 95;
+                INI_LIM_INF_ANG_Y = 72;
+                INI_LIM_SUP_ANG_Y = 91;
+                INI_LIM_INF_ANG_Z = 0;
+                INI_LIM_SUP_ANG_Z = 17;
                 break;
         }
+*/
     }
 
     /**
@@ -230,30 +251,30 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         switch (excersice) {
             case 0:
                 //flex codo
-                FIN_LIM_INF_ANG_X = INI_LIM_INF_ANG_X + 48;
+                FIN_LIM_INF_ANG_X = X[0] + 48;
                 FIN_LIM_SUP_ANG_X = INI_LIM_SUP_ANG_X + 40;
-                FIN_LIM_INF_ANG_Y = INI_LIM_INF_ANG_Y - 16;
+                FIN_LIM_INF_ANG_Y = Y[0] - 16;
                 FIN_LIM_SUP_ANG_Y = INI_LIM_SUP_ANG_Y - 9;
-                FIN_LIM_INF_ANG_Z = INI_LIM_INF_ANG_Z + 112;
-                FIN_LIM_SUP_ANG_Z = INI_LIM_SUP_ANG_Z + 115;
+                FIN_LIM_INF_ANG_Z = Z[0] + 112;
+                FIN_LIM_SUP_ANG_Z = INI_LIM_SUP_ANG_Z + 104;
                 break;
             case 1:
                 //flex muñeca
-                FIN_LIM_INF_ANG_X = INI_LIM_INF_ANG_X + 115;
-                FIN_LIM_SUP_ANG_X = FIN_LIM_INF_ANG_X + 20;
-                FIN_LIM_INF_ANG_Y = INI_LIM_INF_ANG_Y - 10;
-                FIN_LIM_SUP_ANG_Y = FIN_LIM_INF_ANG_Y + 19;
-                FIN_LIM_INF_ANG_Z = INI_LIM_INF_ANG_Z - 35;
-                FIN_LIM_SUP_ANG_Z = FIN_LIM_INF_ANG_Z + 16;
+                FIN_LIM_INF_ANG_X = 151;
+                FIN_LIM_SUP_ANG_X = 171;
+                FIN_LIM_INF_ANG_Y = 69;
+                FIN_LIM_SUP_ANG_Y = 88;
+                FIN_LIM_INF_ANG_Z = 95;
+                FIN_LIM_SUP_ANG_Z = 111;
                 break;
             case 2:
                 //pronosup
-                FIN_LIM_INF_ANG_X = INI_LIM_INF_ANG_X - 3;
-                FIN_LIM_SUP_ANG_X = FIN_LIM_INF_ANG_X + 17;
-                FIN_LIM_INF_ANG_Y = INI_LIM_INF_ANG_Y + 3;
-                FIN_LIM_SUP_ANG_Y = FIN_LIM_INF_ANG_Y + 17;
-                FIN_LIM_INF_ANG_Z = INI_LIM_INF_ANG_Z + 166;
-                FIN_LIM_SUP_ANG_Z = FIN_LIM_INF_ANG_Z + 14;
+                FIN_LIM_INF_ANG_X = 81;
+                FIN_LIM_SUP_ANG_X = 98;
+                FIN_LIM_INF_ANG_Y = 75;
+                FIN_LIM_SUP_ANG_Y = 92;
+                FIN_LIM_INF_ANG_Z = 166;
+                FIN_LIM_SUP_ANG_Z = 180;
                 break;
         }
     }
@@ -261,76 +282,40 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
     //boolean solo para poder detener la ejecución del código en ciertos casos
     private boolean chExercise() {
         if (!fPosInicial) {
-            setInitPosition(); //especifica los valores iniciales
+            setInitPosition(); //Aun no estan especificados los valores iniciales
             if (lValues.size() != 3) {
                 return false;
             }
         }
+/*
+        if (!initialPosition()) { //puede modificar la bandera fIniFlexCodo
+            return false;
+        }
 
-        int rX = (int) AnguloX - (int) tmpX;
-        int rY = (int) AnguloY - (int) tmpY;
-        int rZ = (int) AnguloZ - (int) tmpZ;
+        if (!finalPosition()) { //puede modificar la bandera fEndElbowFlex
+            return false;
+        }
 
-        Log.i("RESTAX", AnguloX + " - " + tmpX + " = " + rX);
-        Log.i("RESTAY", AnguloY + " - " + tmpY + " = " + rY);
-        Log.i("RESTAZ", AnguloZ + " - " + tmpZ + " = " + rZ);
-        Log.i("FLAG", uFlag + "");
-
-        if ((rX <= 0) || (0 <= rY) || (rZ <= 0)) {
-            Log.i("STATUS", "UP");
-            //movimiento hacia arriba
-            //los tmp tienen el momento antes de subir
-            rX = Math.abs(rX);
-            rY = Math.abs(rY);
-            rZ = Math.abs(rZ);
-            if ((0 > rX || rX > 10) || (0 > rY || rY > 5) || (0 > rZ || rZ > 10)) {
-                if (uFlag) {
-                    resultados.add(tmpX + " " + tmpY + " " + tmpZ); //arriba
-                    uFlag = false;
-                }
-            }
-        } else if ((0 <= rX) || (rY <= 0) || (0 <= rZ)) {
-            Log.i("STATUS", "DOWN");
-            //movimiento hacia abajo
-            //los tmp tienen el movimiento antes de bajar
-            rX = Math.abs(rX);
-            rY = Math.abs(rY);
-            rZ = Math.abs(rZ);
-
-            if ((0 > rX || rX > 3) && (0 > rY || rY > 5) && (0 > rZ || rZ > 3)) {
-                if (!uFlag) {
-                    Log.i("ABS", rX + "");
-                    Log.i("ABS", rY + "");
-                    Log.i("ABS", rZ + "");
-
-                    resultados.add(tmpX + " " + tmpY + " " + tmpZ); //abajo
-
-                    REPETITIONS++;
-                    speak(REPETITIONS + "");
-                    tvNumRep.setText(REPETITIONS + "");
-                    calcEficiencia();
-
-                    if (REPETITIONS == FINAL_REP) {
-                        Bundle datos = new Bundle();
-                        datos.putStringArrayList("LIST", resultados);
-                        Intent iListado = new Intent(this, listado_resultados.class);
-                        iListado.putExtras(datos);
-                        startActivity(iListado);
-                    }
-                    uFlag = true;
-                }
+        ++REPETITIONS;
+*/
+        tvNumRep.setText(REPETITIONS + "");
+        if (REPETITIONS < FINAL_REP + 1) { //hizo todos las REPETITIONS?
+            if (REPETITIONS != FINAL_REP) { //no es la última repetición??
+                speak(REPETITIONS + "");
+                fIniFlexCodo = false; //para volver a la posición inicial
+            } else {
+                REPETITIONS = 0;
+                fIniFlexCodo = fEndElbowFlex = true; //deshabilita ambos procesos
+                speak("Points: " + String.format("%.2f", percent));
             }
         }
-        tmpX = AnguloX;
-        tmpY = AnguloY;
-        tmpZ = AnguloZ;
-        return true;
+        return false;
     }
 
     private void setInitPosition() {
         boolean flag = true;
         float[] tmpV, objV;
-        float menorX, menorY, menorZ;
+        float mayorX, menorX, mayorY, menorY, mayorZ, menorZ;
         lValues.add(new float[]{AnguloX, AnguloY, AnguloZ});
 
         timer(1); //un segundo
@@ -365,16 +350,6 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
             if (flag) {
                 iniInitialValues(new int[]{(int) menorX}, new int[]{(int) menorY}, new int[]{(int) menorZ});
                 iniFinalValues(new int[]{(int) menorX}, new int[]{(int) menorY}, new int[]{(int) menorZ});
-
-                tmpX = menorX;
-                tmpY = menorY;
-                tmpZ = menorZ;
-                uFlag = true;
-
-                resultados.add("Inicio: " + tmpX + " " + tmpY + " " + tmpZ);
-
-                speak("Ready");
-
                 fPosInicial = true;
                 fIniFlexCodo = false;
             }
@@ -396,61 +371,48 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         timer.start();
     }
 
-    private boolean calcEficiencia() {
-        String[] parts = resultados.get(resultados.size() - 1).split(" "); //xyz fin
-        String[] parts2 = resultados.get(resultados.size() - 2).split(" "); //xyz inicio
-        percent = chIniPos(parts2) + chFinPos(parts);
-        actualizaListView();
-        return true;
-    }
-
-    private void actualizaListView() {
-        String color;
-        if (percent > 85) {
-            //verde
-            color = "1734656";
-        } else if (percent > 60) {
-            //naranja
-            color = "#FF8000";
-        } else {
-            //rojo
-            color = "#FF0000";
-        }
-        alItems.add(new Item_Resultado(REPETITIONS, color, percent + ""));
-        adapter = new ListViewAdapter(alItems, this);
-        adapter.notifyDataSetChanged();
-        lvRepe.setAdapter(adapter);
-        percent = 0;
-    }
-
     //CHECA LA POSICIÓN INICIAL DEL EJERCICIO
-    private Float chIniPos(String[] parts) {
-        Float calif = 0f;
-        if ((INI_LIM_INF_ANG_X <= Float.parseFloat(parts[0]) && Float.parseFloat(parts[0]) <= INI_LIM_SUP_ANG_X)) {
-            calif += (100f / 3f);
+    private boolean initialPosition() {
+        if (isInInitialPos()) {
+
+            if (!fIniFlexCodo) { //el dispositivo está en la posicíon correcta?
+                if (REPETITIONS == 0) {
+                    speak("Ready");
+                }
+
+                fIniFlexCodo = true; //deshabilita esta parte
+                fEndElbowFlex = false;//habilita la siguiente parte
+
+                resultados.add("X: " + AnguloXMax + "\n" +
+                        "Y: " + AnguloYMax + "\n" +
+                        "Z: " + AnguloZMax + "\n");
+            }
         }
-        if ((INI_LIM_INF_ANG_Y <= Float.parseFloat(parts[0]) && Float.parseFloat(parts[0]) <= INI_LIM_SUP_ANG_Y)) {
-            calif += (100f / 3f);
-        }
-        if ((INI_LIM_INF_ANG_Y <= Float.parseFloat(parts[0]) && Float.parseFloat(parts[0]) <= INI_LIM_SUP_ANG_Y)) {
-            calif += (100f / 3f);
-        }
-        return calif;
+        return fIniFlexCodo;
+    }
+
+    private boolean isInInitialPos()
+    {
+        return  (INI_LIM_INF_ANG_X <= AnguloX && AnguloX <= INI_LIM_SUP_ANG_X) &&
+                (INI_LIM_INF_ANG_Y <= AnguloY && AnguloY <= INI_LIM_SUP_ANG_Y) &&
+                (INI_LIM_INF_ANG_Z <= AnguloZ && AnguloZ <= INI_LIM_SUP_ANG_Z);
     }
 
     //Verifica la posición final de flex codo
-    private Float chFinPos(String[] parts) {
-        Float calif = 0f;
-        if ((FIN_LIM_INF_ANG_X <= Float.parseFloat(parts[0]) && Float.parseFloat(parts[0]) <= FIN_LIM_SUP_ANG_X)) {
-            calif += (100f / 3f);
+    private boolean finalPosition() {
+        if ((FIN_LIM_INF_ANG_X <= AnguloX && AnguloX <= FIN_LIM_SUP_ANG_X) &&
+                (FIN_LIM_INF_ANG_Y <= AnguloY && AnguloY <= FIN_LIM_SUP_ANG_Y) &&
+                (FIN_LIM_INF_ANG_Z <= AnguloZ && AnguloZ <= FIN_LIM_SUP_ANG_Z)) {
+
+            if (!fEndElbowFlex) {
+                resultados.add("X: " + AnguloXMax + "\n" +
+                        "Y: " + AnguloYMax + "\n" +
+                        "Z: " + AnguloZMax + "\n");
+
+                fEndElbowFlex = true; //el dispositivo esta en la posición correcta
+            }
         }
-        if ((FIN_LIM_INF_ANG_Y <= Float.parseFloat(parts[0]) && Float.parseFloat(parts[0]) <= FIN_LIM_SUP_ANG_Y)) {
-            calif += (100f / 3f);
-        }
-        if ((FIN_LIM_INF_ANG_Y <= Float.parseFloat(parts[0]) && Float.parseFloat(parts[0]) <= FIN_LIM_SUP_ANG_Y)) {
-            calif += (100f / 3f);
-        }
-        return calif;
+        return fEndElbowFlex;
     }
 
 }

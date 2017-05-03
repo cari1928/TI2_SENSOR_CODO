@@ -2,9 +2,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/itmIniResults"
-        android:title="Resultados Iniciales"></item>
-    <item
-        android:id="@+id/itmFinResults"
-        android:title="Resultados Finales"></item>
+        android:id="@+id/itmResultados"
+        android:title="Resultados"></item>
 </menu>
