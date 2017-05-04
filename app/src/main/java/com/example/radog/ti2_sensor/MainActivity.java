@@ -3,8 +3,6 @@ package com.example.radog.ti2_sensor;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -20,11 +18,7 @@ public class MainActivity extends AppCompatActivity {
     ListView lvExercises;
 
     private ListAdapter listAdapter;
-    private String[] exercises = new String[]{
-            "Flexoextensión de codo",
-            "Flexoextensión de muñeca",
-            "Pronosupinación"
-    };
+    private String[] exercises = new String[]{"Flexoextensión de codo"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

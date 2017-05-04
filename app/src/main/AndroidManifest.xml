@@ -20,8 +20,7 @@
         </activity>
         <activity
             android:name=".Data"
-            android:screenOrientation="portrait" />
-        <activity android:name=".listado_resultados"></activity>
+            android:screenOrientation="portrait"></activity>
     </application>
 
 </manifest>
