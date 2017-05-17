@@ -10,7 +10,6 @@ import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.Menu;
 import android.widget.TextView;
 
 import com.github.lzyzsd.circleprogress.DonutProgress;
@@ -332,15 +331,17 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
      * @return
      */
     private Float chIniPos(String[] parts) {
-        Float calif = 0f;
-        if ((INI_LIM_INF_ANG_X <= Float.parseFloat(parts[0]) && Float.parseFloat(parts[0]) <= INI_LIM_SUP_ANG_X)) {
+        Float calif;
+        /*if ((INI_LIM_INF_ANG_X <= Float.parseFloat(parts[0]) && Float.parseFloat(parts[0]) <= INI_LIM_SUP_ANG_X)) {
             calif += (100f / 3f);
         }
         if ((INI_LIM_INF_ANG_Y <= Float.parseFloat(parts[1]) && Float.parseFloat(parts[1]) <= INI_LIM_SUP_ANG_Y)) {
             calif += (100f / 3f);
-        }
-        if ((INI_LIM_INF_ANG_Y <= Float.parseFloat(parts[2]) && Float.parseFloat(parts[2]) <= INI_LIM_SUP_ANG_Y)) {
-            calif += (100f / 3f);
+        }*/
+        if ((INI_LIM_INF_ANG_Z <= Float.parseFloat(parts[2]) && Float.parseFloat(parts[2]) <= INI_LIM_SUP_ANG_Z)) {
+            calif = 100f;
+        } else {
+            calif = 50f;
         }
         return calif;
     }
@@ -352,15 +353,18 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
      * @return
      */
     private Float chFinPos(String[] parts) {
-        Float calif = 0f;
-        if ((FIN_LIM_INF_ANG_X <= Float.parseFloat(parts[0]) && Float.parseFloat(parts[0]) <= FIN_LIM_SUP_ANG_X)) {
+        Float calif;
+        /*if ((FIN_LIM_INF_ANG_X <= Float.parseFloat(parts[0]) && Float.parseFloat(parts[0]) <= FIN_LIM_SUP_ANG_X)) {
             calif += (100f / 3f);
         }
         if ((FIN_LIM_INF_ANG_Y <= Float.parseFloat(parts[0]) && Float.parseFloat(parts[0]) <= FIN_LIM_SUP_ANG_Y)) {
             calif += (100f / 3f);
-        }
-        if ((FIN_LIM_INF_ANG_Y <= Float.parseFloat(parts[0]) && Float.parseFloat(parts[0]) <= FIN_LIM_SUP_ANG_Y)) {
-            calif += (100f / 3f);
+        }*/
+        if ((FIN_LIM_INF_ANG_Z <= Float.parseFloat(parts[2]) && Float.parseFloat(parts[2]) <= FIN_LIM_SUP_ANG_Z)) {
+            //calif += (100f / 3f);
+            calif = 100f;
+        } else {
+            calif = 50f;
         }
         return calif;
     }
