@@ -12,6 +12,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.github.lzyzsd.circleprogress.DonutProgress;
@@ -53,7 +54,7 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
 
     private int REPETITIONS = 0; //conteo de repeticiones
     private final int FINAL_REP = 15;
-    private final float GlobalInc = 100 / 15;
+    private final float GlobalInc = 100/15;
     private float GlobalScore;
     private double percent = 0; //eficiencia, fase de pruebas
 
@@ -76,12 +77,12 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
 
         InsideInitPos = true;
 
-        AnguloXMax = 0;
-        AnguloYMax = 0;
-        AnguloZMax = 0;
+        AnguloXMax=0;
+        AnguloYMax=0;
+        AnguloZMax=0;
 
-        INI_MIN_ANG_Z = 0;
-        GlobalScore = 0;
+        INI_MIN_ANG_Z=0;
+        GlobalScore=0;
 
         textToSpeech = new TextToSpeech(this, this);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -125,12 +126,12 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         //Obtiene el angulo relativo de z
         AnguloZ -= INI_MIN_ANG_Z;
         //Asegura que el algulo maximo registrado sea 90
-        AnguloZ = (AnguloZ < 90) ? AnguloZ : 90;
-        AnguloZ = (AnguloZ > 0) ? AnguloZ : 0;
+        AnguloZ = (AnguloZ<90)?AnguloZ:90;
+        AnguloZ = (AnguloZ>0)?AnguloZ:0;
         //Actualiza los angulos maximos
-        AnguloXMax = (AnguloXMax > AnguloX) ? AnguloXMax : AnguloX;
-        AnguloYMax = (AnguloYMax > AnguloY) ? AnguloYMax : AnguloY;
-        AnguloZMax = (AnguloZMax > AnguloZ) ? AnguloZMax : AnguloZ;
+        AnguloXMax=(AnguloXMax > AnguloX)?AnguloXMax : AnguloX;
+        AnguloYMax=(AnguloYMax > AnguloY)?AnguloYMax : AnguloY;
+        AnguloZMax=(AnguloZMax > AnguloZ)?AnguloZMax : AnguloZ;
 
         //Actualiza la barra de progreso de cada repeticion
         PB_Bar1.setProgress((int) AnguloZMax);
@@ -139,23 +140,26 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         TV_AnguloY.setText(String.format("%.2f", AnguloY));
         TV_AnguloZ.setText(String.format("%.2f", AnguloZ));
 
-        if (fPosInicial)
-            if (InsideInitPos) {
-                if (!isInInitialPos()) InsideInitPos = false;
-            } else {
-                if (isInInitialPos()) {
-                    InsideInitPos = true;
-                    initialPosition();
-                    //Obtiene el porcentaje con respecto al maximo angulo alcanzado
-                    GlobalScore += GlobalInc * (AnguloZMax / 90);
-                    PB_Bar2.setProgress((int) GlobalScore);
-                    REPETITIONS++;
-                    speak(String.valueOf(REPETITIONS));
-                    AnguloXMax = 0;
-                    AnguloYMax = 0;
-                    AnguloZMax = 0;
-                }
+        if(fPosInicial)
+        if(InsideInitPos)
+        {
+            if(!isInInitialPos())InsideInitPos=false;
+        }
+        else
+        {
+            if(isInInitialPos())
+            {
+                InsideInitPos=true;
+                initialPosition();
+                //Obtiene el porcentaje con respecto al maximo angulo alcanzado
+                GlobalScore += GlobalInc*(AnguloZMax/90);
+                PB_Bar2.setProgress((int) GlobalScore);
+                REPETITIONS++;
+                AnguloXMax=0;
+                AnguloYMax=0;
+                AnguloZMax=0;
             }
+        }
 
         chExercise();
     }
@@ -197,15 +201,14 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
      *
      * @param msg Mensaje
      */
-    private void speak(String msg) {
-        textToSpeech.speak(msg, TextToSpeech.QUEUE_FLUSH, null);
-    }
+    //private void speak(String msg) {textToSpeech.speak(msg, TextToSpeech.QUEUE_FLUSH, null);}
 
     /**
      * Asigna los valores para los atributos INI_LIM_INF e INI_LIM_SUP para los planos XYZ. Para la posición inicial
      */
     private void iniInitialValues(int[] X, int[] Y, int[] Z) {
-        INI_MIN_ANG_Z = Z[0];
+
+                INI_MIN_ANG_Z = Z[0] ;
     }
 
     //boolean solo para poder detener la ejecución del código en ciertos casos
@@ -302,16 +305,17 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
                     "Y: " + AnguloYMax + "\n" +
                     "Z: " + AnguloZMax + "\n");
 
-            Log.println(Log.DEBUG, "tag", "X: " + AnguloXMax + "\n" + "Y: " + AnguloYMax + "\n" + "Z: " + AnguloZMax + "\n");
+            Log.println(Log.DEBUG,"tag","X: " + AnguloXMax + "\n" +"Y: " + AnguloYMax + "\n" + "Z: " + AnguloZMax + "\n");
         }
 
         return fIniFlexCodo;
     }
 
-    private boolean isInInitialPos() {
-        if (InsideInitPos)
-            return (INI_LIM_INF_ANG_Z <= AnguloZ && AnguloZ <= INI_LIM_SUP_ANG_Z + 10);
+    private boolean isInInitialPos()
+    {
+        if(InsideInitPos)
+            return  (INI_LIM_INF_ANG_Z <= AnguloZ && AnguloZ <= INI_LIM_SUP_ANG_Z+10);
         else
-            return (INI_LIM_INF_ANG_Z <= AnguloZ && AnguloZ <= INI_LIM_SUP_ANG_Z);
+            return  (INI_LIM_INF_ANG_Z <= AnguloZ && AnguloZ <= INI_LIM_SUP_ANG_Z);
     }
 }
