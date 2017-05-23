@@ -1,15 +1,17 @@
 package com.example.radog.ti2_sensor;
 
 import android.content.Context;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.TextView;
 
 import com.github.lzyzsd.circleprogress.DonutProgress;
@@ -22,54 +24,44 @@ import butterknife.ButterKnife;
 
 public class Data extends AppCompatActivity implements SensorEventListener, TextToSpeech.OnInitListener {
 
+    private static int INI_MIN_ANG_Z;
     @BindView(R.id.tvNumRep)
     TextView tvNumRep;
-    @BindView(R.id.tvType)
-    TextView tvType;
     @BindView(R.id.TV_AnguloX)
     TextView TV_AnguloX;
     @BindView(R.id.TV_AnguloY)
     TextView TV_AnguloY;
     @BindView(R.id.TV_AnguloZ)
     TextView TV_AnguloZ;
-    @BindView(R.id.donut_progress)
-    DonutProgress dpProgress;
+
+    @BindView(R.id.D_PB_Bar1)
+    DonutProgress PB_Bar1;
+
+    @BindView(R.id.D_PB_Bar2)
+    DonutProgress PB_Bar2;
 
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private TextToSpeech textToSpeech; //para la voz
     private float AnguloX, AnguloY, AnguloZ;
-
-    //por ahora no se ocupan
+    private float AnguloXMax, AnguloYMax, AnguloZMax;
     private boolean fIniFlexCodo, fEndElbowFlex; //para ir viendo la posición del dispositivo
 
-    //LIMITES PARA LOS 3 PLANOS------------
-    private int INI_LIM_INF_ANG_X;
-    private int INI_LIM_SUP_ANG_X;
-    private int FIN_LIM_INF_ANG_X;
-    private int FIN_LIM_SUP_ANG_X;
-
-    private int INI_LIM_INF_ANG_Y;
-    private int INI_LIM_SUP_ANG_Y;
-    private int FIN_LIM_INF_ANG_Y;
-    private int FIN_LIM_SUP_ANG_Y;
-
-    private int INI_LIM_INF_ANG_Z;
-    private int INI_LIM_SUP_ANG_Z;
-    private int FIN_LIM_INF_ANG_Z;
-    private int FIN_LIM_SUP_ANG_Z;
+    private final int INI_LIM_INF_ANG_Z = 0;
+    private final int INI_LIM_SUP_ANG_Z = 10;
     //----------------------------------------
 
     private int REPETITIONS = 0; //conteo de repeticiones
     private final int FINAL_REP = 15;
+    private final float GlobalInc = 100 / 15;
+    private float GlobalScore;
     private double percent = 0; //eficiencia, fase de pruebas
 
     private ArrayList<String> resultados = new ArrayList<>();
     private ArrayList<float[]> lValues;
     private boolean fPosInicial;
+    private boolean InsideInitPos;
     private int excersice;
-    private float tmpX, tmpY, tmpZ;
-    private boolean uFlag;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,15 +70,45 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         ButterKnife.bind(this);
 
         lValues = new ArrayList<>();
-        fPosInicial = false; //desbloqueado
-        fIniFlexCodo = true; //bloqueado
-        fEndElbowFlex = true; //bloqueado
-        tmpX = tmpY = tmpZ = 0; //inicializa
-        uFlag = false;
+        fPosInicial = false;
+        fIniFlexCodo = true;
+        fEndElbowFlex = true;
+
+        InsideInitPos = true;
+
+        AnguloXMax = 0;
+        AnguloYMax = 0;
+        AnguloZMax = 0;
+
+        INI_MIN_ANG_Z = 0;
+        GlobalScore = 0;
 
         textToSpeech = new TextToSpeech(this, this);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
+        PB_Bar1.setMax(90);
+        PB_Bar2.setMax(100);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.options, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.itmResultados:
+                Bundle datos = new Bundle();
+                datos.putStringArrayList("LIST", resultados);
+                Intent iListado = new Intent(this, listado_resultados.class);
+                iListado.putExtras(datos);
+                startActivity(iListado);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -100,9 +122,40 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         AnguloY = (float) (Math.acos(k * B) * 180f / Math.PI);
         AnguloZ = (float) (Math.acos(k * C) * 180f / Math.PI);
 
+        //Obtiene el angulo relativo de z
+        AnguloZ -= INI_MIN_ANG_Z;
+        //Asegura que el algulo maximo registrado sea 90
+        AnguloZ = (AnguloZ < 90) ? AnguloZ : 90;
+        AnguloZ = (AnguloZ > 0) ? AnguloZ : 0;
+        //Actualiza los angulos maximos
+        AnguloXMax = (AnguloXMax > AnguloX) ? AnguloXMax : AnguloX;
+        AnguloYMax = (AnguloYMax > AnguloY) ? AnguloYMax : AnguloY;
+        AnguloZMax = (AnguloZMax > AnguloZ) ? AnguloZMax : AnguloZ;
+
+        //Actualiza la barra de progreso de cada repeticion
+        PB_Bar1.setProgress((int) AnguloZMax);
+
         TV_AnguloX.setText(String.format("%.2f", AnguloX));
         TV_AnguloY.setText(String.format("%.2f", AnguloY));
         TV_AnguloZ.setText(String.format("%.2f", AnguloZ));
+
+        if (fPosInicial)
+            if (InsideInitPos) {
+                if (!isInInitialPos()) InsideInitPos = false;
+            } else {
+                if (isInInitialPos()) {
+                    InsideInitPos = true;
+                    initialPosition();
+                    //Obtiene el porcentaje con respecto al maximo angulo alcanzado
+                    GlobalScore += GlobalInc * (AnguloZMax / 90);
+                    PB_Bar2.setProgress((int) GlobalScore);
+                    REPETITIONS++;
+                    speak(String.valueOf(REPETITIONS));
+                    AnguloXMax = 0;
+                    AnguloYMax = 0;
+                    AnguloZMax = 0;
+                }
+            }
 
         chExercise();
     }
@@ -115,7 +168,8 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
     @Override
     protected void onResume() {
         super.onResume();
-        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        mSensorManager.registerListener(this, mAccelerometer,
+                SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     @Override
@@ -151,101 +205,35 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
      * Asigna los valores para los atributos INI_LIM_INF e INI_LIM_SUP para los planos XYZ. Para la posición inicial
      */
     private void iniInitialValues(int[] X, int[] Y, int[] Z) {
-        tvType.setText("Flexo-Extensión de Codo");
-        INI_LIM_INF_ANG_X = X[0] - 5;
-        INI_LIM_SUP_ANG_X = INI_LIM_INF_ANG_X + 44;
-        INI_LIM_INF_ANG_Y = Y[0] - 5;
-        INI_LIM_SUP_ANG_Y = INI_LIM_INF_ANG_Y + 17;
-        INI_LIM_INF_ANG_Z = Z[0] - 5;
-        INI_LIM_SUP_ANG_Z = INI_LIM_INF_ANG_Z + 27;
-
-    }
-
-    /**
-     * Asigna los valores para los atributos FIN_LIM_INF e INI_LIM_SUP para los planos XYZ. Para la posición final
-     */
-    private void iniFinalValues(int X[], int Y[], int Z[]) {
-        FIN_LIM_INF_ANG_X = INI_LIM_INF_ANG_X + 48;
-        FIN_LIM_SUP_ANG_X = INI_LIM_SUP_ANG_X + 40;
-        FIN_LIM_INF_ANG_Y = INI_LIM_INF_ANG_Y - 16;
-        FIN_LIM_SUP_ANG_Y = INI_LIM_SUP_ANG_Y - 9;
-        FIN_LIM_INF_ANG_Z = INI_LIM_INF_ANG_Z + 112;
-        FIN_LIM_SUP_ANG_Z = INI_LIM_SUP_ANG_Z + 115;
+        INI_MIN_ANG_Z = Z[0];
     }
 
     //boolean solo para poder detener la ejecución del código en ciertos casos
     private boolean chExercise() {
         if (!fPosInicial) {
-            setInitPosition(); //especifica los valores iniciales
+            setInitPosition(); //Aun no estan especificados los valores iniciales
             if (lValues.size() != 3) {
                 return false;
             }
         }
-
-        int rX = (int) AnguloX - (int) tmpX;
-        int rY = (int) AnguloY - (int) tmpY;
-        int rZ = (int) AnguloZ - (int) tmpZ;
-
-        //para pruebas
-        /*Log.i("RESTAX", AnguloX + " - " + tmpX + " = " + rX);
-        Log.i("RESTAY", AnguloY + " - " + tmpY + " = " + rY);
-        Log.i("RESTAZ", AnguloZ + " - " + tmpZ + " = " + rZ);
-        Log.i("FLAG", uFlag + "");*/
-
-        if ((rX <= 0) || (0 <= rY) || (rZ <= 0)) {
-            //para pruebas
-            //Log.i("STATUS", "UP");
-
-            //movimiento hacia arriba
-            //los tmp tienen el momento antes de subir
-            rX = Math.abs(rX);
-            rY = Math.abs(rY);
-            rZ = Math.abs(rZ);
-            if ((0 > rX || rX > 10) || (0 > rY || rY > 5) || (0 > rZ || rZ > 10)) {
-                if (uFlag) {
-                    resultados.add(tmpX + " " + tmpY + " " + tmpZ); //arriba
-                    uFlag = false;
-                }
-            }
-        } else if ((0 <= rX) || (rY <= 0) || (0 <= rZ)) {
-            //para pruebas
-            //Log.i("STATUS", "DOWN");
-
-            //movimiento hacia abajo
-            //los tmp tienen el movimiento antes de bajar
-            rX = Math.abs(rX);
-            rY = Math.abs(rY);
-            rZ = Math.abs(rZ);
-
-            if ((0 > rX || rX > 3) && (0 > rY || rY > 5) && (0 > rZ || rZ > 3)) {
-                if (!uFlag) {
-                    Log.i("ABS", rX + "");
-                    Log.i("ABS", rY + "");
-                    Log.i("ABS", rZ + "");
-
-                    resultados.add(tmpX + " " + tmpY + " " + tmpZ); //abajo
-
-                    if (REPETITIONS < FINAL_REP) {
-                        REPETITIONS++;
-                        speak(REPETITIONS + "");
-                        tvNumRep.setText(REPETITIONS + "");
-                        calcEficiencia();
-                    }
-
-                    uFlag = true;
-                }
+        tvNumRep.setText(REPETITIONS + "");
+        if (REPETITIONS < FINAL_REP + 1) { //hizo todos las REPETITIONS?
+            if (REPETITIONS != FINAL_REP) { //no es la última repetición??
+                //speak(REPETITIONS + "");
+                fIniFlexCodo = false; //para volver a la posición inicial
+            } else {
+                REPETITIONS = 0;
+                fIniFlexCodo = fEndElbowFlex = true; //deshabilita ambos procesos
+                //speak("Points: " + String.format("%.2f", percent));
             }
         }
-        tmpX = AnguloX;
-        tmpY = AnguloY;
-        tmpZ = AnguloZ;
-        return true;
+        return false;
     }
 
     private void setInitPosition() {
         boolean flag = true;
         float[] tmpV, objV;
-        float menorX, menorY, menorZ;
+        float mayorX, menorX, mayorY, menorY, mayorZ, menorZ;
         lValues.add(new float[]{AnguloX, AnguloY, AnguloZ});
 
         timer(1); //un segundo
@@ -279,17 +267,6 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
 
             if (flag) {
                 iniInitialValues(new int[]{(int) menorX}, new int[]{(int) menorY}, new int[]{(int) menorZ});
-                iniFinalValues(new int[]{(int) menorX}, new int[]{(int) menorY}, new int[]{(int) menorZ});
-
-                tmpX = menorX;
-                tmpY = menorY;
-                tmpZ = menorZ;
-                uFlag = true;
-
-                resultados.add("Inicio: " + tmpX + " " + tmpY + " " + tmpZ);
-
-                speak("Ready");
-
                 fPosInicial = true;
                 fIniFlexCodo = false;
             }
@@ -311,88 +288,30 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         timer.start();
     }
 
-    private boolean calcEficiencia() {
-        String[] parts = resultados.get(resultados.size() - 1).split(" "); //xyz fin
-        String[] parts2 = resultados.get(resultados.size() - 2).split(" "); //xyz inicio
-        float calif = (((chIniPos(parts2) + chFinPos(parts)) / 2) / 15) + 1;
-        percent += calif;
+    //CHECA LA POSICIÓN INICIAL DEL EJERCICIO
+    private boolean initialPosition() {
+        if (!fIniFlexCodo) { //el dispositivo está en la posicíon correcta?
+            if (REPETITIONS == 0) {
+                //speak("Ready");
+            }
 
-        if (percent > 100) {
-            percent = 100;
+            fIniFlexCodo = true; //deshabilita esta parte
+            fEndElbowFlex = false;//habilita la siguiente parte
+
+            resultados.add("X: " + AnguloXMax + "\n" +
+                    "Y: " + AnguloYMax + "\n" +
+                    "Z: " + AnguloZMax + "\n");
+
+            Log.println(Log.DEBUG, "tag", "X: " + AnguloXMax + "\n" + "Y: " + AnguloYMax + "\n" + "Z: " + AnguloZMax + "\n");
         }
-        new DonutBar((int) percent).execute();
-        return true;
+
+        return fIniFlexCodo;
     }
 
-    /**
-     * Promedio de la posición inicial en XYZ
-     *
-     * @param parts
-     * @return
-     */
-    private Float chIniPos(String[] parts) {
-        Float calif;
-        /*if ((INI_LIM_INF_ANG_X <= Float.parseFloat(parts[0]) && Float.parseFloat(parts[0]) <= INI_LIM_SUP_ANG_X)) {
-            calif += (100f / 3f);
-        }
-        if ((INI_LIM_INF_ANG_Y <= Float.parseFloat(parts[1]) && Float.parseFloat(parts[1]) <= INI_LIM_SUP_ANG_Y)) {
-            calif += (100f / 3f);
-        }*/
-        if ((INI_LIM_INF_ANG_Z <= Float.parseFloat(parts[2]) && Float.parseFloat(parts[2]) <= INI_LIM_SUP_ANG_Z)) {
-            calif = 100f;
-        } else {
-            calif = 50f;
-        }
-        return calif;
-    }
-
-    /**
-     * Promedio de la posición final en XYZ
-     *
-     * @param parts
-     * @return
-     */
-    private Float chFinPos(String[] parts) {
-        Float calif;
-        /*if ((FIN_LIM_INF_ANG_X <= Float.parseFloat(parts[0]) && Float.parseFloat(parts[0]) <= FIN_LIM_SUP_ANG_X)) {
-            calif += (100f / 3f);
-        }
-        if ((FIN_LIM_INF_ANG_Y <= Float.parseFloat(parts[0]) && Float.parseFloat(parts[0]) <= FIN_LIM_SUP_ANG_Y)) {
-            calif += (100f / 3f);
-        }*/
-        if ((FIN_LIM_INF_ANG_Z <= Float.parseFloat(parts[2]) && Float.parseFloat(parts[2]) <= FIN_LIM_SUP_ANG_Z)) {
-            //calif += (100f / 3f);
-            calif = 100f;
-        } else {
-            calif = 50f;
-        }
-        return calif;
-    }
-
-    public class DonutBar extends AsyncTask<Void, Integer, Integer> {
-
-        private int cont;
-
-        public DonutBar(int cont) {
-            this.cont = cont;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            dpProgress.setMax(100);
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            super.onProgressUpdate(values);
-            dpProgress.setProgress(values[0]);
-        }
-
-        @Override
-        protected Integer doInBackground(Void... params) {
-            publishProgress(cont);
-            return null;
-        }
+    private boolean isInInitialPos() {
+        if (InsideInitPos)
+            return (INI_LIM_INF_ANG_Z <= AnguloZ && AnguloZ <= INI_LIM_SUP_ANG_Z + 10);
+        else
+            return (INI_LIM_INF_ANG_Z <= AnguloZ && AnguloZ <= INI_LIM_SUP_ANG_Z);
     }
 }

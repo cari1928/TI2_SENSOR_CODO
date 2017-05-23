@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:custom="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -10,114 +8,97 @@
     tools:layout_editor_absoluteY="81dp">
 
     <TextView
-        android:id="@+id/tvType"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="16dp"
-        android:text="Ejercicio"
-        android:textSize="18dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:layout_constraintLeft_creator="1"
-        tools:layout_constraintTop_creator="1" />
-
-    <TextView
         android:id="@+id/tvRep"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="7dp"
+        android:text="Flexo-Extensión de Codo:"
+        android:textSize="20dp"
+        tools:layout_editor_absoluteX="16dp"
+        tools:layout_editor_absoluteY="16dp" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:text="Repeticiones:"
         android:textSize="20dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvType"
-        tools:layout_constraintLeft_creator="1"
-        tools:layout_constraintTop_creator="1" />
+        tools:layout_editor_absoluteX="16dp"
+        tools:layout_editor_absoluteY="55dp" />
 
     <TextView
         android:id="@+id/tvNumRep"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="25dp"
-        android:layout_marginRight="25dp"
         android:text="0"
         android:textSize="20dp"
-        app:layout_constraintBottom_toBottomOf="@+id/tvRep"
-        app:layout_constraintRight_toRightOf="@+id/TV_AnguloY"
-        app:layout_constraintTop_toTopOf="@+id/tvRep"
-        tools:layout_constraintBottom_creator="1"
-        tools:layout_constraintRight_creator="1"
-        tools:layout_constraintTop_creator="1" />
+        tools:layout_editor_absoluteX="176dp"
+        tools:layout_editor_absoluteY="55dp" />
 
     <TextView
         android:id="@+id/TV_AnguloX"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="11dp"
-        android:layout_marginLeft="8dp"
-        android:layout_marginRight="11dp"
         android:layout_marginStart="8dp"
         android:text="TV_AnguloX"
         android:textSize="20dp"
-        android:visibility="invisible"
-        app:layout_constraintBaseline_toBaselineOf="@+id/TV_AnguloY"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="@+id/tvRep"
-        tools:layout_constraintBaseline_creator="1"
-        tools:layout_constraintLeft_creator="1"
-        tools:layout_constraintRight_creator="1" />
+        android:visibility="gone"
+        tools:layout_editor_absoluteX="65dp"
+        tools:layout_editor_absoluteY="44dp" />
 
     <TextView
         android:id="@+id/TV_AnguloY"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="8dp"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="14dp"
         android:text="TV_AnguloY"
         android:textSize="20dp"
-        android:visibility="invisible"
-        app:layout_constraintLeft_toRightOf="@+id/tvRep"
-        app:layout_constraintTop_toBottomOf="@+id/tvNumRep"
-        tools:layout_constraintLeft_creator="1"
-        tools:layout_constraintTop_creator="1" />
+        android:visibility="gone"
+        tools:layout_editor_absoluteX="129dp"
+        tools:layout_editor_absoluteY="0dp" />
 
     <TextView
         android:id="@+id/TV_AnguloZ"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
-        android:layout_marginRight="8dp"
         android:text="TV_AnguloZ"
         android:textSize="20dp"
-        android:visibility="invisible"
-        app:layout_constraintBaseline_toBaselineOf="@+id/TV_AnguloY"
-        app:layout_constraintRight_toRightOf="parent"
-        tools:layout_constraintBaseline_creator="1"
-        tools:layout_constraintRight_creator="1" />
+        android:visibility="gone"
+        tools:layout_editor_absoluteX="384dp"
+        tools:layout_editor_absoluteY="0dp" />
+
+    <TextView
+        android:id="@+id/D_TV_Bar1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Progreso Actual"
+        android:textSize="20dp"
+        tools:layout_editor_absoluteX="16dp"
+        tools:layout_editor_absoluteY="156dp" />
 
     <com.github.lzyzsd.circleprogress.DonutProgress
-        android:id="@+id/donut_progress"
-        android:layout_width="200dp"
-        android:layout_height="188dp"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="133dp"
-        android:layout_marginEnd="45dp"
-        android:layout_marginLeft="45dp"
-        android:layout_marginRight="45dp"
-        android:layout_marginStart="45dp"
-        app:donut_text_size="40dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        custom:donut_progress="0"
-        tools:layout_constraintBottom_creator="1"
-        tools:layout_constraintLeft_creator="1"
-        tools:layout_constraintRight_creator="1"
-        app:layout_constraintHorizontal_bias="0.495" />
+        android:id="@+id/D_PB_Bar1"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        tools:layout_editor_absoluteX="187dp"
+        tools:layout_editor_absoluteY="92dp" />
+
+    <TextView
+        android:id="@+id/D_TV_Bar2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Progreso Global"
+        android:textSize="20dp"
+        tools:layout_editor_absoluteX="16dp"
+        tools:layout_editor_absoluteY="316dp" />
+
+    <com.github.lzyzsd.circleprogress.DonutProgress
+        android:id="@+id/D_PB_Bar2"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+
+        tools:layout_editor_absoluteX="187dp"
+        tools:layout_editor_absoluteY="261dp" />
 
 </android.support.constraint.ConstraintLayout>
