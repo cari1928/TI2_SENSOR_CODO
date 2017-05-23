@@ -1,7 +1,6 @@
 package com.example.radog.ti2_sensor;
 
 import android.content.Context;
-import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -10,9 +9,6 @@ import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.github.lzyzsd.circleprogress.DonutProgress;
@@ -25,7 +21,6 @@ import butterknife.ButterKnife;
 
 public class Data extends AppCompatActivity implements SensorEventListener, TextToSpeech.OnInitListener {
 
-    private static int INI_MIN_ANG_Z;
     @BindView(R.id.tvNumRep)
     TextView tvNumRep;
     @BindView(R.id.TV_AnguloX)
@@ -44,25 +39,16 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private TextToSpeech textToSpeech; //para la voz
-    private float AnguloX, AnguloY, AnguloZ;
+    private ArrayList<float[]> lValues;
+    private float AnguloX, AnguloY, AnguloZ, GlobalScore;
     private float AnguloXMax, AnguloYMax, AnguloZMax;
-    private boolean fIniFlexCodo, fEndElbowFlex; //para ir viendo la posición del dispositivo
-
+    private int REPETITIONS = 0; //conteo de repeticiones
+    private boolean fIniFlexCodo, fEndElbowFlex, fPosInicial, InsideInitPos; //para ir viendo la posición del dispositivo
     private final int INI_LIM_INF_ANG_Z = 0;
     private final int INI_LIM_SUP_ANG_Z = 10;
-    //----------------------------------------
-
-    private int REPETITIONS = 0; //conteo de repeticiones
+    private final float GlobalInc = 100 / 15;
     private final int FINAL_REP = 15;
-    private final float GlobalInc = 100/15;
-    private float GlobalScore;
-    private double percent = 0; //eficiencia, fase de pruebas
-
-    private ArrayList<String> resultados = new ArrayList<>();
-    private ArrayList<float[]> lValues;
-    private boolean fPosInicial;
-    private boolean InsideInitPos;
-    private int excersice;
+    private static int INI_MIN_ANG_Z;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,17 +58,10 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
 
         lValues = new ArrayList<>();
         fPosInicial = false;
-        fIniFlexCodo = true;
-        fEndElbowFlex = true;
+        fIniFlexCodo = fEndElbowFlex = InsideInitPos = true;
 
-        InsideInitPos = true;
-
-        AnguloXMax=0;
-        AnguloYMax=0;
-        AnguloZMax=0;
-
-        INI_MIN_ANG_Z=0;
-        GlobalScore=0;
+        AnguloXMax = AnguloYMax = AnguloZMax = INI_MIN_ANG_Z = 0;
+        GlobalScore = 0;
 
         textToSpeech = new TextToSpeech(this, this);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -90,26 +69,6 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
 
         PB_Bar1.setMax(90);
         PB_Bar2.setMax(100);
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.options, menu);
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.itmResultados:
-                Bundle datos = new Bundle();
-                datos.putStringArrayList("LIST", resultados);
-                Intent iListado = new Intent(this, listado_resultados.class);
-                iListado.putExtras(datos);
-                startActivity(iListado);
-                break;
-        }
-        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -126,12 +85,12 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         //Obtiene el angulo relativo de z
         AnguloZ -= INI_MIN_ANG_Z;
         //Asegura que el algulo maximo registrado sea 90
-        AnguloZ = (AnguloZ<90)?AnguloZ:90;
-        AnguloZ = (AnguloZ>0)?AnguloZ:0;
+        AnguloZ = (AnguloZ < 90) ? AnguloZ : 90;
+        AnguloZ = (AnguloZ > 0) ? AnguloZ : 0;
         //Actualiza los angulos maximos
-        AnguloXMax=(AnguloXMax > AnguloX)?AnguloXMax : AnguloX;
-        AnguloYMax=(AnguloYMax > AnguloY)?AnguloYMax : AnguloY;
-        AnguloZMax=(AnguloZMax > AnguloZ)?AnguloZMax : AnguloZ;
+        AnguloXMax = (AnguloXMax > AnguloX) ? AnguloXMax : AnguloX;
+        AnguloYMax = (AnguloYMax > AnguloY) ? AnguloYMax : AnguloY;
+        AnguloZMax = (AnguloZMax > AnguloZ) ? AnguloZMax : AnguloZ;
 
         //Actualiza la barra de progreso de cada repeticion
         PB_Bar1.setProgress((int) AnguloZMax);
@@ -140,26 +99,22 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
         TV_AnguloY.setText(String.format("%.2f", AnguloY));
         TV_AnguloZ.setText(String.format("%.2f", AnguloZ));
 
-        if(fPosInicial)
-        if(InsideInitPos)
-        {
-            if(!isInInitialPos())InsideInitPos=false;
-        }
-        else
-        {
-            if(isInInitialPos())
-            {
-                InsideInitPos=true;
-                initialPosition();
-                //Obtiene el porcentaje con respecto al maximo angulo alcanzado
-                GlobalScore += GlobalInc*(AnguloZMax/90);
-                PB_Bar2.setProgress((int) GlobalScore);
-                REPETITIONS++;
-                AnguloXMax=0;
-                AnguloYMax=0;
-                AnguloZMax=0;
+        if (fPosInicial)
+            if (InsideInitPos) {
+                if (!isInInitialPos()) InsideInitPos = false;
+            } else {
+                if (isInInitialPos()) {
+                    InsideInitPos = true;
+                    initialPosition();
+                    //Obtiene el porcentaje con respecto al maximo angulo alcanzado
+                    GlobalScore += GlobalInc * (AnguloZMax / 90);
+                    PB_Bar2.setProgress((int) GlobalScore);
+                    REPETITIONS++;
+                    AnguloXMax = 0;
+                    AnguloYMax = 0;
+                    AnguloZMax = 0;
+                }
             }
-        }
 
         chExercise();
     }
@@ -208,7 +163,7 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
      */
     private void iniInitialValues(int[] X, int[] Y, int[] Z) {
 
-                INI_MIN_ANG_Z = Z[0] ;
+        INI_MIN_ANG_Z = Z[0];
     }
 
     //boolean solo para poder detener la ejecución del código en ciertos casos
@@ -300,22 +255,16 @@ public class Data extends AppCompatActivity implements SensorEventListener, Text
 
             fIniFlexCodo = true; //deshabilita esta parte
             fEndElbowFlex = false;//habilita la siguiente parte
-
-            resultados.add("X: " + AnguloXMax + "\n" +
-                    "Y: " + AnguloYMax + "\n" +
-                    "Z: " + AnguloZMax + "\n");
-
-            Log.println(Log.DEBUG,"tag","X: " + AnguloXMax + "\n" +"Y: " + AnguloYMax + "\n" + "Z: " + AnguloZMax + "\n");
+            Log.println(Log.DEBUG, "tag", "X: " + AnguloXMax + "\n" + "Y: " + AnguloYMax + "\n" + "Z: " + AnguloZMax + "\n");
         }
 
         return fIniFlexCodo;
     }
 
-    private boolean isInInitialPos()
-    {
-        if(InsideInitPos)
-            return  (INI_LIM_INF_ANG_Z <= AnguloZ && AnguloZ <= INI_LIM_SUP_ANG_Z+10);
+    private boolean isInInitialPos() {
+        if (InsideInitPos)
+            return (INI_LIM_INF_ANG_Z <= AnguloZ && AnguloZ <= INI_LIM_SUP_ANG_Z + 10);
         else
-            return  (INI_LIM_INF_ANG_Z <= AnguloZ && AnguloZ <= INI_LIM_SUP_ANG_Z);
+            return (INI_LIM_INF_ANG_Z <= AnguloZ && AnguloZ <= INI_LIM_SUP_ANG_Z);
     }
 }
